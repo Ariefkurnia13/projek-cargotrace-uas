@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "CargoTrace Platform REST API",
+    "description": "Comprehensive Postman Collection for CargoTrace Global Shipment Visibility & Tracking Platform (Web Programming 2 UAS)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login (Operator / Admin / Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@cargotrace.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/login"
+          }
+        },
+        {
+          "name": "Register Customer Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Freight Customer\",\n  \"email\": \"newcustomer@example.com\",\n  \"password\": \"Password123!\",\n  \"password_confirmation\": \"Password123!\",\n  \"company_name\": \"Global Import Co\",\n  \"phone\": \"+62 812-9988-7766\"\n}"
+            },
+            "url": "{{baseUrl}}/register"
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Shipments",
+      "item": [
+        {
+          "name": "List Shipments (Filtered & Scoped)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments?status=IN_TRANSIT&per_page=10"
+          }
+        },
+        {
+          "name": "Get Shipment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments/1"
+          }
+        },
+        {
+          "name": "Create Shipment (Operator/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipment_number\": \"CT-DEMO-9901\",\n  \"customer_id\": 3,\n  \"carrier_id\": 1,\n  \"origin_id\": 1,\n  \"destination_id\": 4,\n  \"cargo_type\": \"ELECTRONICS\",\n  \"total_weight_kg\": 1200.50,\n  \"total_volume_cbm\": 8.5,\n  \"expected_departure\": \"2026-12-01 08:00:00\",\n  \"expected_arrival\": \"2026-12-10 18:00:00\",\n  \"notes\": \"Direct API consignment creation\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments"
+          }
+        },
+        {
+          "name": "Update Shipment Status (State Machine)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BOOKED\",\n  \"notes\": \"Booking slot confirmed by carrier\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments/1/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Tracking Events",
+      "item": [
+        {
+          "name": "Get Tracking Timeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments/1/tracking"
+          }
+        },
+        {
+          "name": "Add Tracking Event (Operator/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location_id\": 2,\n  \"event_status\": \"IN_TRANSIT\",\n  \"event_type\": \"CHECKPOINT\",\n  \"event_time\": \"2026-11-20 10:30:00\",\n  \"description\": \"Vessel arrived at Port of Singapore for bunkering.\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments/1/tracking"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Exceptions",
+      "item": [
+        {
+          "name": "Get Shipment Exceptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/shipments/1/exceptions"
+          }
+        },
+        {
+          "name": "Log Exception",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exception_type\": \"WEATHER_DELAY\",\n  \"severity\": \"MEDIUM\",\n  \"description\": \"Severe squall storm near Malacca Strait causing 12h speed reduction.\",\n  \"detected_at\": \"2026-11-20 12:00:00\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments/1/exceptions"
+          }
+        },
+        {
+          "name": "Update Exception Status (Resolve)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolution_notes\": \"Weather cleared, full cruising speed resumed.\"\n}"
+            },
+            "url": "{{baseUrl}}/exceptions/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Carriers & Locations",
+      "item": [
+        {
+          "name": "List Carriers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/carriers"
+          }
+        },
+        {
+          "name": "List Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/locations"
+          }
+        }
+      ]
+    }
+  ]
+}
