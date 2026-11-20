@@ -89,4 +89,25 @@ class Shipment extends Model
     {
         return $this->hasMany(ShipmentException::class)->latest('detected_at');
     }
+
+        /**
+     * Scope query untuk Role-Based Access Control (Slide 05)
+     */
+    public function scopeForUser($query, User $user)
+    {
+        if ($user->isCustomer()) {
+            return $query->where('customer_id', $user->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Relasi untuk mengambil kendala kargo yang masih aktif/belum selesai
+     */
+    public function openExceptions()
+    {
+        return $this->hasMany(ShipmentException::class)
+            ->whereIn('status', ['OPEN', 'INVESTIGATING']);
+    }
 }

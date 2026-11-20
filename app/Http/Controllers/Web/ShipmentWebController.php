@@ -9,6 +9,9 @@ use App\Models\Carrier;
 use App\Models\Location;
 use App\Models\Shipment;
 use App\Models\User;
+use App\Services\ExternalApiService;
+use App\Services\ShipmentService;
+use App\Services\TrackingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -41,8 +44,9 @@ class ShipmentWebController extends Controller
 
         $shipments = $query->latest()->paginate(10)->withQueryString();
         $carriers = Carrier::where('is_active', true)->get();
+        $locations = Location::orderBy('name')->get();
 
-        return view('shipments.index', compact('shipments', 'carriers'));
+        return view('shipments.index', compact('shipments', 'carriers', 'locations'));
     }
 
     public function create()
@@ -51,7 +55,7 @@ class ShipmentWebController extends Controller
 
         $customers = User::where('role', 'CUSTOMER')->get();
         $carriers = Carrier::where('is_active', true)->get();
-        $locations = Location::all();
+        $locations = Location::orderBy('name')->get();
 
         return view('shipments.create', compact('customers', 'carriers', 'locations'));
     }
@@ -61,14 +65,14 @@ class ShipmentWebController extends Controller
         $validated = $request->validated();
         $validated['current_status'] = ShipmentStatus::CREATED;
         $validated['current_location_id'] = $validated['origin_id'];
-        $validated['estimated_arrival'] = $validated['expected_arrival']; // Default awal
+        $validated['estimated_arrival'] = $validated['expected_arrival'];
 
         $shipment = Shipment::create($validated);
 
         return redirect()->route('shipments.index')->with('success', "Shipment {$shipment->shipment_number} created successfully.");
     }
 
-    public function show(Shipment $shipment)
+    public function show(Shipment $shipment, ExternalApiService $externalApiService)
     {
         $user = Auth::user();
 
@@ -77,9 +81,63 @@ class ShipmentWebController extends Controller
             abort(403, 'Unauthorized: You can only view your own consignments.');
         }
 
-        $shipment->load(['customer', 'carrier', 'origin', 'destination', 'currentLocation', 'items', 'trackingEvents.location', 'exceptions']);
+        $shipment->load([
+            'customer',
+            'carrier',
+            'origin',
+            'destination',
+            'currentLocation',
+            'items',
+            'trackingEvents.location',
+            'trackingEvents.creator',
+            'exceptions.reporter',
+        ]);
 
-        return view('shipments.show', compact('shipment'));
+        // Mengambil riwayat perjalanan kronologis (Slide 07)
+        $timeline = $shipment->trackingEvents;
+        $locations = Location::orderBy('name')->get();
+
+        // Mengambil cuaca real-time di titik koordinat kapal saat ini (Slide 09)
+        $activeLocation = $shipment->currentLocation ?? $shipment->origin;
+        $weatherData = null;
+        if ($activeLocation && $activeLocation->latitude && $activeLocation->longitude) {
+            $weatherData = $externalApiService->getWeather(
+                (float) $activeLocation->latitude,
+                (float) $activeLocation->longitude
+            );
+        }
+
+        return view('shipments.show', compact('shipment', 'timeline', 'locations', 'weatherData'));
+    }
+
+    public function updateStatus(Request $request, Shipment $shipment, ShipmentService $shipmentService)
+    {
+        $this->authorizeOperator();
+
+        $request->validate([
+            'target_status' => ['required', 'string'],
+            'location_id' => ['nullable', 'exists:locations,id'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $targetStatus = ShipmentStatus::from($request->input('target_status'));
+
+            $shipmentService->transitionStatus(
+                $shipment,
+                $targetStatus,
+                Auth::user(),
+                $request->input('description')
+            );
+
+            if ($request->filled('location_id')) {
+                $shipment->update(['current_location_id' => $request->input('location_id')]);
+            }
+
+            return back()->with('success', "Shipment status updated to {$targetStatus->value} successfully.");
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     private function authorizeOperator(): void

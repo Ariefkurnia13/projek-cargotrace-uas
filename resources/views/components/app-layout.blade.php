@@ -167,6 +167,17 @@
             @endif
         </div>
 
+                    @if($errors->any())
+                <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 shadow-sm mb-4">
+                    <p class="font-bold text-xs uppercase tracking-wider mb-1">⚠️ Form Validation Notice:</p>
+                    <ul class="list-disc pl-5 space-y-0.5 text-xs font-medium">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
         <!-- Main Content -->
         <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
             {{ $slot }}

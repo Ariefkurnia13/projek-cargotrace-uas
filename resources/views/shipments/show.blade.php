@@ -68,13 +68,13 @@
                 @foreach(\App\Enums\ShipmentStatus::cases() as $st)
                     @php($stIndex = $st->stepIndex())
                     <div class="flex flex-col items-center text-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 transition
-                            {{ $stIndex < $currentIndex ? 'bg-emerald-500 text-white' : ($stIndex === $currentIndex ? 'bg-blue-600 text-white ring-4 ring-blue-100 animate-pulse' : 'bg-slate-200 text-slate-500') }}">
-                            @if($stIndex < $currentIndex)
-                                ✓
-                            @else
-                                {{ $stIndex }}
-                            @endif
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 transition
+                            {{ ($stIndex < $currentIndex || ($shipment->current_status->isTerminal() && $stIndex === $currentIndex)) ? 'bg-emerald-500 text-white' : ($stIndex === $currentIndex ? 'bg-blue-600 text-white ring-4 ring-blue-100 animate-pulse' : 'bg-slate-200 text-slate-500') }}">
+                            @if($stIndex < $currentIndex || ($shipment->current_status->isTerminal() && $stIndex === $currentIndex))
+    ✓
+@else
+    {{ $stIndex + 1 }}
+@endif
                         </div>
                         <span class="text-xs font-bold {{ $stIndex <= $currentIndex ? 'text-slate-900' : 'text-slate-400' }}">
                             {{ $st->label() }}
@@ -383,6 +383,9 @@
 
             <form action="{{ route('shipments.tracking.store', $shipment) }}" method="POST" class="space-y-3.5">
                 @csrf
+                            <form action="{{ route('shipments.tracking.store', $shipment) }}" method="POST" class="space-y-3.5">
+                @csrf
+                <input type="hidden" name="event_status" value="{{ $shipment->current_status->value }}">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Location Hub</label>
                     <select name="location_id" id="tracking_location_id" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">

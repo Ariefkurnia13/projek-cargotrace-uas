@@ -50,4 +50,13 @@ class TrackingEvent extends Model
     {
         return $this->belongsTo(ShipmentException::class, 'exception_id');
     }
+
+
+        /**
+     * Memeriksa apakah event ini merupakan kendala/exception (Slide 07)
+     */
+    public function isException(): bool
+    {
+        return $this->event_type === 'EXCEPTION' || $this->exception_id !== null;
+    }
 }

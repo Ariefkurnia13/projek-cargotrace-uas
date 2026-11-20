@@ -9,6 +9,16 @@ enum DelaySeverity: string
     case MEDIUM = 'MEDIUM';
     case HIGH = 'HIGH';
 
+    public function label(): string
+    {
+        return match($this) {
+            self::NONE => 'On Time',
+            self::LOW => 'Low Delay (<6h)',
+            self::MEDIUM => 'Medium Delay (6-24h)',
+            self::HIGH => 'Critical Delay (>24h)',
+        };
+    }
+
     public function badgeClass(): string
     {
         return match($this) {

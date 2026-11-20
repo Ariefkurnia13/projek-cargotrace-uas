@@ -13,12 +13,12 @@ class StoreTrackingEventRequest extends FormRequest
         return $this->user() && $this->user()->canManageShipments();
     }
 
-    public function rules(): array
+            public function rules(): array
     {
         return [
             'location_id' => ['nullable', 'exists:locations,id'],
             'location_name' => ['nullable', 'string', 'max:150'],
-            'event_status' => ['required', Rule::enum(ShipmentStatus::class)],
+            'event_status' => ['nullable', Rule::enum(ShipmentStatus::class)],
             'event_type' => ['required', 'string', 'in:NORMAL,CHECKPOINT,DEPARTURE,ARRIVAL,EXCEPTION'],
             'event_time' => ['required', 'date'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
