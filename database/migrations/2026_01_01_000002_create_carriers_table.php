@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('carriers', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 20)->unique()->index(); // e.g. MAERSK, MSC, DHL, FEDEX
-            $table->string('name', 120);
-            $table->string('contact_email')->nullable();
-            $table->string('phone', 50)->nullable();
-            $table->string('service_type', 30)->default('OCEAN'); // OCEAN, AIR, ROAD, RAIL
+            $table->string('code', 20)->unique()->index(); // Contoh: MSK, CMA, DHL
+            $table->string('name', 100);
+            $table->string('service_type', 20)->default('OCEAN'); // OCEAN, AIR, LAND, MULTIMODAL
+            $table->string('contact_email', 150)->nullable();
+            $table->string('contact_phone', 50)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

@@ -17,34 +17,33 @@ return new class extends Migration
             $table->foreignId('destination_id')->constrained('locations')->onDelete('restrict');
             $table->foreignId('current_location_id')->nullable()->constrained('locations')->onDelete('set null');
 
-            $table->string('cargo_type', 60)->default('GENERAL'); // ELECTRONICS, PERISHABLE, TEXTILE, etc.
+            $table->string('cargo_type', 60)->default('GENERAL');
             $table->decimal('total_weight_kg', 10, 2)->default(0.00);
             $table->decimal('total_volume_cbm', 10, 2)->default(0.00);
             
-            // Lifecycle status: CREATED, BOOKED, PICKED_UP, IN_TRANSIT, DELIVERED
+            // Status Lifecycle (Slide 06)
             $table->string('current_status', 30)->default('CREATED')->index();
 
-            // Schedules and Milestones
+            // Jadwal SLA & Waktu Tempuh
             $table->dateTime('expected_departure');
             $table->dateTime('actual_departure')->nullable();
             $table->dateTime('expected_arrival');
             $table->dateTime('estimated_arrival');
             $table->dateTime('actual_arrival')->nullable();
 
-            // ETA, Delay & Calculation Fields
+            // Kolom Kalkulasi Delay & SLA
             $table->boolean('is_delayed')->default(false)->index();
             $table->integer('delay_duration_minutes')->default(0);
-            $table->string('delay_severity', 20)->default('NONE')->index(); // NONE, LOW, MEDIUM, HIGH
+            $table->string('delay_severity', 20)->default('NONE')->index();
             $table->string('delay_reason', 255)->nullable();
 
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            // Composite indexes for fast dashboard queries and filters
+            // Composite Index untuk optimasi pencarian & dashboard
             $table->index(['current_status', 'is_delayed']);
             $table->index(['customer_id', 'current_status']);
-            $table->index(['carrier_id', 'current_status']);
         });
     }
 

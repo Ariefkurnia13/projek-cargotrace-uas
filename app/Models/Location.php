@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Location extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'code',
         'name',
@@ -16,33 +13,28 @@ class Location extends Model
         'country',
         'latitude',
         'longitude',
-        'timezone',
-        'is_hub',
     ];
 
-    protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
-        'is_hub' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+        ];
+    }
 
-    public function originShipments()
+    public function departingShipments()
     {
         return $this->hasMany(Shipment::class, 'origin_id');
     }
 
-    public function destinationShipments()
+    public function arrivingShipments()
     {
         return $this->hasMany(Shipment::class, 'destination_id');
     }
 
-    public function trackingEvents()
+    public function currentShipments()
     {
-        return $this->hasMany(TrackingEvent::class, 'location_id');
-    }
-
-    public function getDisplayNameAttribute(): string
-    {
-        return "{$this->name} ({$this->code}) - {$this->city}, {$this->country}";
+        return $this->hasMany(Shipment::class, 'current_location_id');
     }
 }
