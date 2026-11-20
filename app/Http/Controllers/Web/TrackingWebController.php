@@ -6,29 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrackingEventRequest;
 use App\Models\Shipment;
 use App\Services\TrackingService;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 
 class TrackingWebController extends Controller
 {
-    public function __construct(
-        protected TrackingService $trackingService
-    ) {}
+    public function __construct(protected TrackingService $trackingService)
+    {
+    }
 
     public function store(StoreTrackingEventRequest $request, Shipment $shipment)
     {
-        Gate::authorize('addTracking', $shipment);
-
         try {
-            $this->trackingService->addEvent(
-                $shipment,
-                $request->user(),
-                $request->validated()
-            );
+            $this->trackingService->addEvent($shipment, Auth::user(), $request->validated());
 
-            return back()->with('success', 'Tracking event successfully appended to historical timeline.');
+            return redirect()->route('shipments.show', $shipment)
+                ->with('success', 'Tracking checkpoint logged successfully.');
         } catch (InvalidArgumentException $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->withInput()->withErrors(['event_time' => $e->getMessage()]);
         }
     }
 }

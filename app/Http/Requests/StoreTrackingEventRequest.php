@@ -2,13 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ShipmentStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTrackingEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->canManageShipments() ?? false;
+        return $this->user() && $this->user()->canManageShipments();
     }
 
     public function rules(): array
@@ -16,13 +18,12 @@ class StoreTrackingEventRequest extends FormRequest
         return [
             'location_id' => ['nullable', 'exists:locations,id'],
             'location_name' => ['nullable', 'string', 'max:150'],
-            'event_status' => ['nullable', 'string', 'in:CREATED,BOOKED,PICKED_UP,IN_TRANSIT,DELIVERED'],
-            'event_type' => ['required', 'string', 'in:NORMAL,EXCEPTION,CHECKPOINT,DEPARTURE,ARRIVAL'],
+            'event_status' => ['required', Rule::enum(ShipmentStatus::class)],
+            'event_type' => ['required', 'string', 'in:NORMAL,CHECKPOINT,DEPARTURE,ARRIVAL,EXCEPTION'],
             'event_time' => ['required', 'date'],
-            'description' => ['required', 'string', 'min:3', 'max:1000'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'exception_id' => ['nullable', 'exists:shipment_exceptions,id'],
+            'description' => ['required', 'string', 'max:1000'],
         ];
     }
 }

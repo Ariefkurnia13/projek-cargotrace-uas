@@ -14,9 +14,9 @@ return new class extends Migration
             $table->foreignId('location_id')->nullable()->constrained('locations')->onDelete('set null');
             $table->foreignId('created_by')->constrained('users')->onDelete('restrict');
 
-            $table->string('event_status', 30)->index(); // Current shipment status at this event
-            $table->string('event_type', 30)->default('NORMAL')->index(); // NORMAL, EXCEPTION, CHECKPOINT, DEPARTURE, ARRIVAL
-            $table->dateTime('event_time')->index(); // Crucial for chronological ordering
+            $table->string('event_status', 30)->index(); // Status shipment pada saat event terjadi
+            $table->string('event_type', 30)->default('NORMAL')->index(); // NORMAL, CHECKPOINT, DEPARTURE, ARRIVAL, EXCEPTION
+            $table->dateTime('event_time')->index(); // Kunci pengurutan kronologis
 
             $table->string('location_name', 150);
             $table->decimal('latitude', 10, 7)->nullable();
@@ -27,7 +27,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Compound index for fast chronological timeline retrieval
+            // Compound index untuk kecepatan query timeline kronologis
             $table->index(['shipment_id', 'event_time']);
         });
     }

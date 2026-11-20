@@ -2,91 +2,69 @@
 
 namespace App\Services;
 
-use App\Enums\ShipmentStatus;
 use App\Models\Location;
 use App\Models\Shipment;
 use App\Models\TrackingEvent;
 use App\Models\User;
-use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class TrackingService
 {
-    public function __construct(
-        protected AuditService $auditService
-    ) {}
+    public function addEvent(Shipment $shipment, User $operator, array $data): TrackingEvent
+    {
+        $eventTime = Carbon::parse($data['event_time']);
 
-    /**
-     * Record a new tracking event for a shipment.
-     * Guaranteed historical append: never overwrites past records.
-     */
-    public function addEvent(
-        Shipment $shipment,
-        User $actor,
-        array $data
-    ): TrackingEvent {
-        return DB::transaction(function () use ($shipment, $actor, $data) {
-            $eventTime = isset($data['event_time']) ? Carbon::parse($data['event_time']) : now();
+        // Validasi Kronologis: Waktu event baru tidak boleh mendahului event terakhir yang tercatat (Slide 07)
+        $latestEvent = $shipment->trackingEvents()->latest('event_time')->first();
+        if ($latestEvent && $eventTime->lt($latestEvent->event_time)) {
+            throw new InvalidArgumentException("Historical integrity violation: Event timestamp [{$eventTime->toDateTimeString()}] cannot precede the latest event [{$latestEvent->event_time->toDateTimeString()}].");
+        }
 
-            // Validate that event timestamp does not regress behind existing latest event
-            $latestEvent = $shipment->trackingEvents()->latest('event_time')->first();
-            if ($latestEvent && $eventTime->lessThan($latestEvent->event_time)) {
-                throw new InvalidArgumentException(
-                    "Tracking event timestamp ({$eventTime}) cannot precede the latest recorded event timestamp ({$latestEvent->event_time})."
-                );
+        return DB::transaction(function () use ($shipment, $operator, $data, $eventTime) {
+            $locationId = $data['location_id'] ?? null;
+            $locationName = $data['location_name'] ?? null;
+            $lat = $data['latitude'] ?? null;
+            $lng = $data['longitude'] ?? null;
+
+            if ($locationId && (! $locationName || ! $lat)) {
+                $location = Location::find($locationId);
+                if ($location) {
+                    $locationName = $location->name;
+                    $lat = $location->latitude;
+                    $lng = $location->longitude;
+                }
             }
 
-            $location = null;
-            if (!empty($data['location_id'])) {
-                $location = Location::find($data['location_id']);
-            }
-
-            $eventStatus = isset($data['event_status']) 
-                ? (is_string($data['event_status']) ? ShipmentStatus::from($data['event_status']) : $data['event_status'])
-                : $shipment->current_status;
-
-            $event = TrackingEvent::create([
-                'shipment_id' => $shipment->id,
-                'location_id' => $location?->id ?? $data['location_id'] ?? null,
-                'created_by' => $actor->id,
-                'event_status' => $eventStatus,
-                'event_type' => $data['event_type'] ?? 'NORMAL',
+            // Simpan event baru (Append-only, tidak pernah menimpa)
+            $event = $shipment->trackingEvents()->create([
+                'location_id' => $locationId,
+                'created_by' => $operator->id,
+                'event_status' => $data['event_status'] ?? $shipment->current_status,
+                'event_type' => $data['event_type'] ?? 'CHECKPOINT',
                 'event_time' => $eventTime,
-                'location_name' => $data['location_name'] ?? ($location?->name ?? 'En Route'),
-                'latitude' => $data['latitude'] ?? ($location?->latitude ?? null),
-                'longitude' => $data['longitude'] ?? ($location?->longitude ?? null),
+                'location_name' => $locationName ?? 'In Transit Waypoint',
+                'latitude' => $lat,
+                'longitude' => $lng,
                 'description' => $data['description'],
                 'exception_id' => $data['exception_id'] ?? null,
             ]);
 
-            // Update shipment's current location from latest valid location event
-            if ($location) {
-                $shipment->update([
-                    'current_location_id' => $location->id,
-                ]);
+            // Perbarui lokasi terkini kapal/kargo
+            if ($locationId) {
+                $shipment->update(['current_location_id' => $locationId]);
             }
-
-            // Audit
-            $this->auditService->log(
-                action: 'TRACKING_EVENT_LOGGED',
-                entity: $event,
-                newValues: $event->toArray(),
-                actor: $actor
-            );
 
             return $event;
         });
     }
 
-    /**
-     * Fetch chronological timeline for a shipment.
-     */
-    public function getTimeline(Shipment $shipment)
+    public function getTimeline(Shipment $shipment): Collection
     {
         return $shipment->trackingEvents()
-            ->with(['location', 'creator', 'exception'])
+            ->with(['location', 'creator'])
             ->orderBy('event_time', 'asc')
             ->get();
     }

@@ -3,13 +3,10 @@
 namespace App\Models;
 
 use App\Enums\ShipmentStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class TrackingEvent extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'shipment_id',
         'location_id',
@@ -27,8 +24,8 @@ class TrackingEvent extends Model
     protected function casts(): array
     {
         return [
-            'event_time' => 'datetime',
             'event_status' => ShipmentStatus::class,
+            'event_time' => 'datetime',
             'latitude' => 'float',
             'longitude' => 'float',
         ];
@@ -52,15 +49,5 @@ class TrackingEvent extends Model
     public function exception()
     {
         return $this->belongsTo(ShipmentException::class, 'exception_id');
-    }
-
-    public function isException(): bool
-    {
-        return $this->event_type === 'EXCEPTION' || $this->exception_id !== null;
-    }
-
-    public function scopeChronological($query)
-    {
-        return $query->orderBy('event_time', 'asc');
     }
 }
