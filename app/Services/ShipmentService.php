@@ -72,4 +72,16 @@ class ShipmentService
             return $shipment;
         });
     }
+
+        public function createShipment(array $data, User $creator): Shipment
+    {
+        if (empty($data['shipment_number'])) {
+            $data['shipment_number'] = 'CT-' . date('Y') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+        }
+        $data['current_status'] = ShipmentStatus::CREATED;
+        $data['current_location_id'] = $data['origin_id'];
+        $data['estimated_arrival'] = $data['expected_arrival'];
+
+        return Shipment::create($data);
+    }
 }

@@ -15,7 +15,7 @@ class StoreShipmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shipment_number' => ['required', 'string', 'max:40', 'unique:shipments,shipment_number'],
+            'shipment_number' => ['nullable', 'string', 'max:40', 'unique:shipments,shipment_number'],
             'customer_id' => ['required', 'exists:users,id'],
             'carrier_id' => ['required', 'exists:carriers,id'],
             'origin_id' => ['required', 'exists:locations,id', 'different:destination_id'],

@@ -60,9 +60,12 @@ class ShipmentWebController extends Controller
         return view('shipments.create', compact('customers', 'carriers', 'locations'));
     }
 
-    public function store(StoreShipmentRequest $request)
+        public function store(StoreShipmentRequest $request)
     {
         $validated = $request->validated();
+        if (empty($validated['shipment_number'])) {
+            $validated['shipment_number'] = 'CT-' . date('Y') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+        }
         $validated['current_status'] = ShipmentStatus::CREATED;
         $validated['current_location_id'] = $validated['origin_id'];
         $validated['estimated_arrival'] = $validated['expected_arrival'];

@@ -102,6 +102,26 @@ class Shipment extends Model
         return $query;
     }
 
+        public function scopeFilter($query, array $filters)
+    {
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('shipment_number', 'like', "%{$filters['search']}%")
+                  ->orWhere('cargo_type', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('current_status', $filters['status']);
+        }
+
+        if (!empty($filters['carrier_id'])) {
+            $query->where('carrier_id', $filters['carrier_id']);
+        }
+
+        return $query;
+    }
+
     /**
      * Relasi untuk mengambil kendala kargo yang masih aktif/belum selesai
      */
